@@ -160,12 +160,28 @@ func TestDeterministicGenerator_GenerateReport_ProducesJSONSerializableReport(t 
 		t.Fatalf("GenerateReport returned error: %v", err)
 	}
 
-	raw, err := json.Marshal(report)
+	raw, err := json.MarshalIndent(report, "", "  ")
 	if err != nil {
 		t.Fatalf("marshal report: %v", err)
 	}
 	if !strings.Contains(string(raw), `"root_cause"`) {
 		t.Fatalf("marshaled report missing root_cause: %s", raw)
+	}
+
+	var decoded map[string]any
+	if err := json.Unmarshal(raw, &decoded); err != nil {
+		t.Fatalf("unmarshal marshaled report: %v", err)
+	}
+
+	rootCause, ok := decoded["root_cause"].(map[string]any)
+	if !ok {
+		t.Fatalf("root_cause is not an object: %#v", decoded["root_cause"])
+	}
+	if _, ok := rootCause["missing_evidence"].([]any); !ok {
+		t.Fatalf("root_cause.missing_evidence is not a JSON array: %s", raw)
+	}
+	if _, ok := decoded["alternative_hypotheses"].([]any); !ok {
+		t.Fatalf("alternative_hypotheses is not a JSON array: %s", raw)
 	}
 }
 
@@ -207,7 +223,11 @@ func validIncident() investigation.Incident {
 			Service:   "checkout-api",
 			StartedAt: time.Date(2026, 6, 28, 9, 42, 0, 0, time.UTC),
 		},
-		Deployment: investigation.Deployment{
+		IncidentWindow: investigation.IncidentWindow{
+			Start: time.Date(2026, 6, 28, 9, 10, 0, 0, time.UTC),
+			End:   time.Date(2026, 6, 28, 9, 50, 0, 0, time.UTC),
+		},
+		Deployment: &investigation.Deployment{
 			ID:         "deploy-checkout-api-20260628-0915",
 			Service:    "checkout-api",
 			Version:    "2026.06.28.1",

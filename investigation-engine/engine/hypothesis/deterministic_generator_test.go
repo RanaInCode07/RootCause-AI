@@ -87,7 +87,7 @@ func TestDeterministicGenerator_GenerateHypotheses_DoesNotGenerateWithInsufficie
 	}
 }
 
-func TestDeterministicGenerator_GenerateHypotheses_IgnoresNonMemoryClassification(t *testing.T) {
+func TestDeterministicGenerator_GenerateHypotheses_UsesStrongEvidenceEvenWhenAlertIsSymptom(t *testing.T) {
 	generator := NewDeterministicGenerator()
 	evidence := []investigation.Evidence{
 		evidenceWithSignal("evidence-deployment", investigation.EvidenceSignalRecentDeployment),
@@ -95,15 +95,18 @@ func TestDeterministicGenerator_GenerateHypotheses_IgnoresNonMemoryClassificatio
 		evidenceWithSignal("evidence-oom", investigation.EvidenceSignalOOMKilled),
 	}
 	classification := memoryClassification()
-	classification.AlertType = "latency"
+	classification.AlertType = "http_5xx_spike"
 
 	hypotheses, err := generator.GenerateHypotheses(context.Background(), investigation.Incident{}, classification, evidence)
 	if err != nil {
 		t.Fatalf("GenerateHypotheses returned error: %v", err)
 	}
 
-	if len(hypotheses) != 0 {
-		t.Fatalf("hypotheses = %#v", hypotheses)
+	if len(hypotheses) != 1 {
+		t.Fatalf("hypothesis count = %d", len(hypotheses))
+	}
+	if hypotheses[0].RootCauseCode != investigation.RootCauseMemoryLeakAfterDeployment {
+		t.Fatalf("root cause = %q", hypotheses[0].RootCauseCode)
 	}
 }
 

@@ -5,6 +5,9 @@ The project is organized around the investigation pipeline, not around delivery 
 ```text
 investigation-engine/
   README.md
+  cmd/
+    aie/
+      main.go
   docs/
     Architecture.md
     FolderStructure.md
@@ -34,6 +37,14 @@ The root contains project-level documentation and, later, Go module files.
 
 Why it exists: it gives contributors one clear entry point for the product goal, constraints, and local development commands.
 
+Generated CLI outputs are written under `outputs/` by default. That directory is runtime output, not engine source.
+
+## `cmd/aie/`
+
+The local command-line entrypoint lives here.
+
+Why it exists: the engine is a library, but users need a concrete way to provide an incident JSON file and receive `report.json` plus `evaluation.json`.
+
 ## `docs/`
 
 Long-form design documentation lives here.
@@ -57,6 +68,8 @@ dataset/
 Why it exists: the engine needs deterministic, repeatable cases with known ground truth. Keeping fixtures outside engine code allows the evaluator to test behavior without hidden assumptions.
 
 The schema folder defines the JSON contract for incident fixtures. The incidents folder contains concrete cases that implement that contract.
+
+The current schema requires `incident_window` and keeps source sections explicit. `deployment` can be `null`; `metrics`, `kubernetes_events`, and `logs` can be empty arrays.
 
 ## `engine/`
 

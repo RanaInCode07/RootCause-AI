@@ -57,11 +57,11 @@ func (generator DeterministicGenerator) GenerateReport(ctx context.Context, inci
 			Code:                  primary.Hypothesis.RootCauseCode,
 			Summary:               primary.Hypothesis.Summary,
 			Confidence:            primary.Confidence,
-			SupportingEvidenceIDs: append([]string(nil), primary.Hypothesis.SupportingEvidenceIDs...),
-			MissingEvidence:       append([]string(nil), primary.MissingEvidence...),
+			SupportingEvidenceIDs: cloneStrings(primary.Hypothesis.SupportingEvidenceIDs),
+			MissingEvidence:       cloneStrings(primary.MissingEvidence),
 		},
-		Evidence:       append([]investigation.Evidence(nil), evidence...),
-		Alternatives:   alternatives,
+		Evidence:       cloneEvidence(evidence),
+		Alternatives:   cloneScoredHypotheses(alternatives),
 		Recommendation: recommendation(incident, primary),
 	}
 
@@ -79,6 +79,27 @@ func rankedHypotheses(hypotheses []investigation.ScoredHypothesis) []investigati
 	return ranked
 }
 
+func cloneStrings(values []string) []string {
+	if len(values) == 0 {
+		return []string{}
+	}
+	return append([]string(nil), values...)
+}
+
+func cloneEvidence(values []investigation.Evidence) []investigation.Evidence {
+	if len(values) == 0 {
+		return []investigation.Evidence{}
+	}
+	return append([]investigation.Evidence(nil), values...)
+}
+
+func cloneScoredHypotheses(values []investigation.ScoredHypothesis) []investigation.ScoredHypothesis {
+	if len(values) == 0 {
+		return []investigation.ScoredHypothesis{}
+	}
+	return append([]investigation.ScoredHypothesis(nil), values...)
+}
+
 func reportSummary(incident investigation.Incident, classification investigation.Classification, primary investigation.ScoredHypothesis) string {
 	service := classification.Service
 	if service == "" {
@@ -94,7 +115,7 @@ func reportSummary(incident investigation.Incident, classification investigation
 
 func buildTimeline(incident investigation.Incident, evidence []investigation.Evidence) []investigation.TimelineEvent {
 	timeline := make([]investigation.TimelineEvent, 0, len(evidence)+3)
-	if !incident.Deployment.DeployedAt.IsZero() {
+	if incident.Deployment != nil && !incident.Deployment.DeployedAt.IsZero() {
 		timeline = append(timeline, investigation.TimelineEvent{
 			Timestamp: incident.Deployment.DeployedAt,
 			Source:    "deployment",
@@ -132,8 +153,11 @@ func buildTimeline(incident investigation.Incident, evidence []investigation.Evi
 	return timeline
 }
 
-func deploymentTimelineSummary(deployment investigation.Deployment) string {
+func deploymentTimelineSummary(deployment *investigation.Deployment) string {
 	parts := []string{"deployment"}
+	if deployment == nil {
+		return strings.Join(parts, " ")
+	}
 	if deployment.Service != "" {
 		parts = append(parts, deployment.Service)
 	}
@@ -145,8 +169,11 @@ func deploymentTimelineSummary(deployment investigation.Deployment) string {
 
 func recommendation(incident investigation.Incident, primary investigation.ScoredHypothesis) string {
 	service := incident.Alert.Service
-	if service == "" {
+	if service == "" && incident.Deployment != nil {
 		service = incident.Deployment.Service
+	}
+	if service == "" {
+		service = "the affected service"
 	}
 
 	if primary.Confidence >= 0.8 {

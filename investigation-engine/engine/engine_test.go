@@ -57,6 +57,33 @@ func TestDefaultEngine_InvestigateFile_RunsOOMFixtureEndToEnd(t *testing.T) {
 	}
 }
 
+func TestDefaultEngine_InvestigateFile_RunsIncident1EndToEnd(t *testing.T) {
+	engine := NewDefault()
+	path := filepath.Join("..", "dataset", "incidents", "incident1.json")
+
+	result, err := engine.InvestigateFile(context.Background(), path)
+	if err != nil {
+		t.Fatalf("InvestigateFile returned error: %v", err)
+	}
+	if result.Report.RootCause.Code != investigation.RootCauseMemoryLeakAfterDeployment {
+		t.Fatalf("root cause = %q", result.Report.RootCause.Code)
+	}
+	if result.Report.RootCause.Confidence != 1 {
+		t.Fatalf("confidence = %v", result.Report.RootCause.Confidence)
+	}
+
+	evaluation, err := evaluator.NewDeterministicEvaluator().Evaluate(context.Background(), result.Report, result.Incident.GroundTruth)
+	if err != nil {
+		t.Fatalf("Evaluate returned error: %v", err)
+	}
+	if evaluation.Status != investigation.EvaluationStatusPass {
+		t.Fatalf("evaluation status = %q", evaluation.Status)
+	}
+	if len(evaluation.MissingEvidenceIDs) != 0 {
+		t.Fatalf("missing evidence = %#v", evaluation.MissingEvidenceIDs)
+	}
+}
+
 func TestNew_ReturnsErrorForMissingDependency(t *testing.T) {
 	_, err := New(Config{})
 	if err == nil {

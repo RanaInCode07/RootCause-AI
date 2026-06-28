@@ -24,6 +24,42 @@ The engine optimizes for correctness, explainability, low AI cost, and replaceab
 6. Produce a JSON report.
 7. Evaluate prediction accuracy against ground truth.
 
+## Running an Investigation
+
+Input is an incident JSON file. Output is stored as JSON files.
+
+The incident JSON contract is defined in:
+
+```text
+dataset/schema/incident.schema.json
+```
+
+Important V1 input rules:
+
+- `incident_window` is required for evidence correlation.
+- `deployment` is required as a field but may be `null`.
+- `metrics`, `kubernetes_events`, and `logs` are required as fields but may be empty arrays.
+- `ground_truth` is used only by the evaluator, not by the investigation engine.
+
+```bash
+go run ./cmd/aie investigate dataset/incidents/oom_after_deployment.json
+```
+
+By default, output is written to:
+
+```text
+outputs/<incident-id>/report.json
+outputs/<incident-id>/evaluation.json
+```
+
+Use `--output-dir` to choose an exact output directory:
+
+```bash
+go run ./cmd/aie investigate --output-dir /tmp/aie-run dataset/incidents/oom_after_deployment.json
+```
+
+`report.json` is the investigation output. `evaluation.json` compares the report with the fixture ground truth.
+
 ## Non-Goals
 
 Version 1 does not include:
@@ -60,4 +96,3 @@ Version 1 does not include:
 - [Architecture](docs/Architecture.md)
 - [Folder Structure](docs/FolderStructure.md)
 - [Roadmap](docs/Roadmap.md)
-

@@ -1,0 +1,16 @@
+# Local generated investigation artifacts.
+outputs/
+
+# Local or generated incident data. Keep schema contracts versioned.
+dataset/*
+!dataset/schema/
+!dataset/schema/**
+
+# Go build artifacts.
+bin/
+dist/
+*.test
+coverage.out
+
+# Editor and OS noise.
+.DS_Store

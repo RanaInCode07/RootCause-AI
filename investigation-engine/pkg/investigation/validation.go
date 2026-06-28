@@ -9,28 +9,37 @@ func (i Incident) Validate() error {
 	if blank(i.ID) {
 		return fmt.Errorf("incident id is required")
 	}
+	if err := i.IncidentWindow.Validate(); err != nil {
+		return fmt.Errorf("incident window: %w", err)
+	}
 	if err := i.Alert.Validate(); err != nil {
 		return fmt.Errorf("alert: %w", err)
 	}
-	if err := i.Deployment.Validate(); err != nil {
-		return fmt.Errorf("deployment: %w", err)
-	}
-	if len(i.Metrics) == 0 {
-		return fmt.Errorf("metrics are required")
+	if i.Deployment != nil {
+		if err := i.Deployment.Validate(); err != nil {
+			return fmt.Errorf("deployment: %w", err)
+		}
 	}
 	for _, series := range i.Metrics {
 		if err := series.Validate(); err != nil {
 			return fmt.Errorf("metric series %q: %w", series.ID, err)
 		}
 	}
-	if len(i.KubernetesEvents) == 0 {
-		return fmt.Errorf("kubernetes events are required")
-	}
-	if len(i.Logs) == 0 {
-		return fmt.Errorf("logs are required")
-	}
 	if err := i.GroundTruth.Validate(); err != nil {
 		return fmt.Errorf("ground truth: %w", err)
+	}
+	return nil
+}
+
+func (w IncidentWindow) Validate() error {
+	if w.Start.IsZero() {
+		return fmt.Errorf("start is required")
+	}
+	if w.End.IsZero() {
+		return fmt.Errorf("end is required")
+	}
+	if w.End.Before(w.Start) {
+		return fmt.Errorf("end must be after start")
 	}
 	return nil
 }

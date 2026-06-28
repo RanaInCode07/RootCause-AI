@@ -32,10 +32,6 @@ func (DeterministicGenerator) GenerateHypotheses(ctx context.Context, incident i
 		return nil, err
 	}
 
-	if classification.AlertType != investigation.AlertTypeMemory {
-		return nil, nil
-	}
-
 	hypothesis, ok := memoryLeakAfterDeploymentHypothesis(evidence)
 	if !ok {
 		return nil, nil

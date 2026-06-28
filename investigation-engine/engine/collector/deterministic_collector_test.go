@@ -140,6 +140,71 @@ func TestDeterministicCollector_CollectEvidence_SortsMetricPointsByTimestamp(t *
 	}
 }
 
+func TestDeterministicCollector_CollectEvidence_DetectsPercentageMemoryIncrease(t *testing.T) {
+	collector := NewDeterministicCollector()
+	incident := investigation.Incident{
+		ID:    "inc-1",
+		Alert: validAlert(),
+		Metrics: []investigation.MetricSeries{
+			{
+				ID:   "metric-memory-percent",
+				Name: "memory_usage",
+				Unit: "%",
+				Points: []investigation.MetricPoint{
+					{Timestamp: validTime(), Value: 61},
+					{Timestamp: validTime().Add(5 * time.Minute), Value: 97},
+				},
+			},
+		},
+	}
+
+	evidence, err := collector.CollectEvidence(context.Background(), incident, fixtureClassification())
+	if err != nil {
+		t.Fatalf("CollectEvidence returned error: %v", err)
+	}
+
+	memoryIncrease := evidenceBySignal(t, evidence, investigation.EvidenceSignalMemoryIncrease)
+	if memoryIncrease.Source.ID != "metric-memory-percent" {
+		t.Fatalf("memory source = %q", memoryIncrease.Source.ID)
+	}
+	if memoryIncrease.Attributes["start_value"] != "61" || memoryIncrease.Attributes["end_value"] != "97" {
+		t.Fatalf("memory attributes = %#v", memoryIncrease.Attributes)
+	}
+}
+
+func TestDeterministicCollector_CollectEvidence_DetectsRestartFromBackOffEvent(t *testing.T) {
+	collector := NewDeterministicCollector()
+	incident := investigation.Incident{
+		ID:    "inc-1",
+		Alert: validAlert(),
+		KubernetesEvents: []investigation.KubernetesEvent{
+			{
+				ID:           "kube-backoff-1",
+				Timestamp:    validTime(),
+				Type:         "Warning",
+				Reason:       "BackOff",
+				Pod:          "checkout-api-abc",
+				Container:    "checkout-api",
+				Message:      "Back-off restarting failed container.",
+				RestartCount: 3,
+			},
+		},
+	}
+
+	evidence, err := collector.CollectEvidence(context.Background(), incident, fixtureClassification())
+	if err != nil {
+		t.Fatalf("CollectEvidence returned error: %v", err)
+	}
+
+	restartIncrease := evidenceBySignal(t, evidence, investigation.EvidenceSignalRestartCountIncrease)
+	if restartIncrease.Source.ID != "kube-backoff-1" {
+		t.Fatalf("restart source = %q", restartIncrease.Source.ID)
+	}
+	if restartIncrease.Attributes["restart_count"] != "3" {
+		t.Fatalf("restart attributes = %#v", restartIncrease.Attributes)
+	}
+}
+
 func TestDeterministicCollector_CollectEvidence_ReturnsContextErrorWhenCanceled(t *testing.T) {
 	collector := NewDeterministicCollector()
 	ctx, cancel := context.WithCancel(context.Background())

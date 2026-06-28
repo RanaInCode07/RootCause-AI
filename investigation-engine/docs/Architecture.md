@@ -15,6 +15,8 @@ The boundary is deliberately narrow:
 
 This keeps the core engine measurable before adapters for real systems are introduced.
 
+The incident JSON contract keeps data-source sections present even when data is unavailable. For example, `deployment` may be `null`, and `metrics`, `kubernetes_events`, and `logs` may be empty arrays. This lets the engine distinguish missing evidence from schema drift.
+
 ## High-Level Components
 
 ### Incident Dataset
@@ -22,6 +24,8 @@ This keeps the core engine measurable before adapters for real systems are intro
 The dataset contains predefined incident JSON files for a fictional company. Each incident includes alert metadata, deployment context, metric samples, Kubernetes-like events, logs, and ground truth.
 
 Tradeoff: static fixtures are less realistic than a simulator, but they make correctness repeatable and keep V1 focused on investigation quality.
+
+Every incident includes an `incident_window` so collectors and future plugins can reason about which observations are relevant to the alert.
 
 ### Investigation Engine
 
@@ -161,4 +165,3 @@ This avoids database design before the investigation model is proven.
 Incident input and report output are JSON because they are readable, easy to version, and convenient for tests.
 
 The tradeoff is weaker schema enforcement than Protobuf. That is acceptable for V1. If contracts stabilize and multiple services appear later, schema-first formats can be introduced.
-

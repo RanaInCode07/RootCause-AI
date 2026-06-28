@@ -33,6 +33,52 @@ func TestJSONFileLoader_LoadIncident_LoadsAndValidatesFixture(t *testing.T) {
 	}
 }
 
+func TestJSONFileLoader_LoadIncident_AllowsNullableDeploymentAndEmptyEvidenceArrays(t *testing.T) {
+	loader := NewJSONFileLoader()
+	path := writeTempFile(t, `{
+		"id": "inc-without-deployment",
+		"metadata": {
+			"title": "Database latency without deployment",
+			"company": "FictionalPay",
+			"environment": "production",
+			"region": "ap-south-1",
+			"detected_at": "2026-06-28T09:45:00Z"
+		},
+		"incident_window": {
+			"start": "2026-06-28T09:30:00Z",
+			"end": "2026-06-28T10:00:00Z"
+		},
+		"alert": {
+			"id": "alert-db-latency",
+			"name": "Database latency high",
+			"type": "latency",
+			"severity": "critical",
+			"service": "checkout-api",
+			"started_at": "2026-06-28T09:42:00Z"
+		},
+		"deployment": null,
+		"metrics": [],
+		"kubernetes_events": [],
+		"logs": [],
+		"ground_truth": {
+			"root_cause_code": "database_latency",
+			"summary": "Database latency caused checkout degradation.",
+			"evidence_ids": []
+		}
+	}`)
+
+	incident, err := loader.LoadIncident(context.Background(), path)
+	if err != nil {
+		t.Fatalf("LoadIncident returned error: %v", err)
+	}
+	if incident.Deployment != nil {
+		t.Fatalf("deployment = %#v, want nil", incident.Deployment)
+	}
+	if len(incident.Metrics) != 0 || len(incident.KubernetesEvents) != 0 || len(incident.Logs) != 0 {
+		t.Fatalf("expected empty evidence arrays")
+	}
+}
+
 func TestJSONFileLoader_LoadIncident_ReturnsValidationError(t *testing.T) {
 	loader := NewJSONFileLoader()
 	path := writeTempFile(t, `{"id":"inc-1"}`)

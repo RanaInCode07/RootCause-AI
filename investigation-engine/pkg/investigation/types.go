@@ -52,8 +52,9 @@ const (
 type Incident struct {
 	ID               string            `json:"id"`
 	Metadata         IncidentMetadata  `json:"metadata"`
+	IncidentWindow   IncidentWindow    `json:"incident_window"`
 	Alert            Alert             `json:"alert"`
-	Deployment       Deployment        `json:"deployment"`
+	Deployment       *Deployment       `json:"deployment"`
 	Metrics          []MetricSeries    `json:"metrics"`
 	KubernetesEvents []KubernetesEvent `json:"kubernetes_events"`
 	Logs             []LogEntry        `json:"logs"`
@@ -66,6 +67,11 @@ type IncidentMetadata struct {
 	Environment string    `json:"environment"`
 	Region      string    `json:"region"`
 	DetectedAt  time.Time `json:"detected_at"`
+}
+
+type IncidentWindow struct {
+	Start time.Time `json:"start"`
+	End   time.Time `json:"end"`
 }
 
 type Alert struct {

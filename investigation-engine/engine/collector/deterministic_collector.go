@@ -46,6 +46,9 @@ func (DeterministicCollector) CollectEvidence(ctx context.Context, incident inve
 		if item, ok := collectOOMKilledEvent(event, classification); ok {
 			evidence = append(evidence, item)
 		}
+		if item, ok := collectRestartEvent(event, classification); ok {
+			evidence = append(evidence, item)
+		}
 	}
 
 	for _, log := range incident.Logs {
@@ -61,7 +64,7 @@ func (DeterministicCollector) CollectEvidence(ctx context.Context, incident inve
 }
 
 func collectRecentDeployment(incident investigation.Incident, classification investigation.Classification) (investigation.Evidence, bool) {
-	if incident.Deployment.DeployedAt.IsZero() {
+	if incident.Deployment == nil || incident.Deployment.DeployedAt.IsZero() {
 		return investigation.Evidence{}, false
 	}
 	if !sameService(incident.Deployment.Service, classification.Service) {
@@ -117,7 +120,7 @@ func collectMetricEvidence(series investigation.MetricSeries) (investigation.Evi
 
 	name := strings.ToLower(series.Name)
 	switch {
-	case strings.Contains(name, "memory") && isSignificantIncrease(start.Value, end.Value, 512, 1.5):
+	case strings.Contains(name, "memory") && isSignificantMemoryIncrease(series, start.Value, end.Value):
 		return metricEvidence(
 			series,
 			investigation.EvidenceSignalMemoryIncrease,
@@ -141,6 +144,33 @@ func collectMetricEvidence(series investigation.MetricSeries) (investigation.Evi
 	default:
 		return investigation.Evidence{}, false
 	}
+}
+
+func collectRestartEvent(event investigation.KubernetesEvent, classification investigation.Classification) (investigation.Evidence, bool) {
+	if !strings.EqualFold(event.Reason, "BackOff") && !strings.Contains(strings.ToLower(event.Message), "restart") {
+		return investigation.Evidence{}, false
+	}
+	if event.RestartCount <= 0 {
+		return investigation.Evidence{}, false
+	}
+	if !eventMatchesService(event, classification.Service) {
+		return investigation.Evidence{}, false
+	}
+
+	return investigation.Evidence{
+		ID:         "evidence-restart_count_increase-" + event.ID,
+		Type:       investigation.EvidenceTypeKubernetesEvent,
+		Signal:     investigation.EvidenceSignalRestartCountIncrease,
+		Source:     investigation.EvidenceSource{Kind: "kubernetes_event", ID: event.ID},
+		ObservedAt: event.Timestamp,
+		Summary:    fmt.Sprintf("container %s restart count reached %d in pod %s", event.Container, event.RestartCount, event.Pod),
+		Attributes: map[string]string{
+			"reason":        event.Reason,
+			"pod":           event.Pod,
+			"container":     event.Container,
+			"restart_count": strconv.Itoa(event.RestartCount),
+		},
+	}, true
 }
 
 func collectOOMKilledEvent(event investigation.KubernetesEvent, classification investigation.Classification) (investigation.Evidence, bool) {
@@ -252,6 +282,13 @@ func isSignificantIncrease(start, end, minDelta, minRatio float64) bool {
 		return end > 0
 	}
 	return end/start >= minRatio
+}
+
+func isSignificantMemoryIncrease(series investigation.MetricSeries, start, end float64) bool {
+	if strings.TrimSpace(series.Unit) == "%" {
+		return isSignificantIncrease(start, end, 20, 1.2)
+	}
+	return isSignificantIncrease(start, end, 512, 1.5)
 }
 
 func isHTTP5xxMetric(name string) bool {

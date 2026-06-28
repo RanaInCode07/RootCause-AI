@@ -32,6 +32,12 @@ func TestIncidentFixture_ValidateOOMAfterDeployment(t *testing.T) {
 	if incident.Alert.Service != "checkout-api" {
 		t.Fatalf("service = %q", incident.Alert.Service)
 	}
+	if incident.IncidentWindow.Start.IsZero() || incident.IncidentWindow.End.IsZero() {
+		t.Fatal("expected incident window")
+	}
+	if incident.Deployment == nil {
+		t.Fatal("expected deployment")
+	}
 	if incident.GroundTruth.RootCauseCode != RootCauseMemoryLeakAfterDeployment {
 		t.Fatalf("ground truth root cause = %q", incident.GroundTruth.RootCauseCode)
 	}
@@ -66,7 +72,7 @@ func TestIncidentJSONSchema_IsPresentAndValidJSON(t *testing.T) {
 	if !ok {
 		t.Fatal("schema required field is missing or invalid")
 	}
-	for _, field := range []string{"id", "alert", "deployment", "metrics", "kubernetes_events", "logs", "ground_truth"} {
+	for _, field := range []string{"id", "metadata", "incident_window", "alert", "deployment", "metrics", "kubernetes_events", "logs", "ground_truth"} {
 		if !containsAnyString(required, field) {
 			t.Fatalf("schema required fields missing %q", field)
 		}
@@ -85,6 +91,13 @@ func TestIncident_ValidateRejectsMissingRequiredFields(t *testing.T) {
 				incident.ID = ""
 			},
 			wantErr: "incident id is required",
+		},
+		{
+			name: "missing incident window",
+			mutate: func(incident *Incident) {
+				incident.IncidentWindow = IncidentWindow{}
+			},
+			wantErr: "incident window: start is required",
 		},
 		{
 			name: "missing alert service",
@@ -118,6 +131,18 @@ func TestIncident_ValidateRejectsMissingRequiredFields(t *testing.T) {
 	}
 }
 
+func TestIncident_ValidateAllowsNullableDeploymentAndEmptyEvidenceArrays(t *testing.T) {
+	incident := validIncident()
+	incident.Deployment = nil
+	incident.Metrics = []MetricSeries{}
+	incident.KubernetesEvents = []KubernetesEvent{}
+	incident.Logs = []LogEntry{}
+
+	if err := incident.Validate(); err != nil {
+		t.Fatalf("validate incident: %v", err)
+	}
+}
+
 func TestMetricSeries_ValidateRejectsSeriesWithoutPoints(t *testing.T) {
 	series := MetricSeries{
 		ID:   "metric-memory",
@@ -144,6 +169,7 @@ func TestReport_ValidateRequiresRootCausePrediction(t *testing.T) {
 func validIncident() Incident {
 	return Incident{
 		ID:               "inc-1",
+		IncidentWindow:   validIncidentWindow(),
 		Alert:            validAlert(),
 		Deployment:       validDeployment(),
 		Metrics:          []MetricSeries{validMetricSeries()},
@@ -164,8 +190,15 @@ func validAlert() Alert {
 	}
 }
 
-func validDeployment() Deployment {
-	return Deployment{
+func validIncidentWindow() IncidentWindow {
+	return IncidentWindow{
+		Start: validTime().Add(-10 * time.Minute),
+		End:   validTime().Add(10 * time.Minute),
+	}
+}
+
+func validDeployment() *Deployment {
+	return &Deployment{
 		ID:         "deploy-1",
 		Service:    "checkout-api",
 		Version:    "2026.06.28.1",
