@@ -11,10 +11,11 @@ investigation-engine/
     Roadmap.md
   dataset/
     incidents/
-  engine/
-    classifier/
-    collector/
-    hypothesis/
+engine/
+  loader/
+  classifier/
+  collector/
+  hypothesis/
     confidence/
     report/
   evaluator/
@@ -58,6 +59,12 @@ The schema folder defines the JSON contract for incident fixtures. The incidents
 The investigation pipeline lives here. Each subpackage owns one stage.
 
 Why it exists: classification, evidence extraction, hypothesis generation, confidence scoring, and report creation are separate responsibilities. Splitting them keeps tests focused and makes future replacements easier.
+
+## `engine/loader/`
+
+Loads simulated incident files into the shared incident model.
+
+Why it exists: file-based fixtures are a V1 adapter. Later dataset sources or generated simulators can replace this loader without changing classifier, collector, or hypothesis code.
 
 ## `engine/classifier/`
 
