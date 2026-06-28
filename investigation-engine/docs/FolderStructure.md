@@ -86,6 +86,8 @@ Generates candidate root causes from evidence.
 
 Why it exists: root-cause candidates should be explainable and independently testable. V1 uses deterministic rules.
 
+The first deterministic rule generates `memory_leak_after_deployment` when a memory alert has enough core evidence from recent deployment, memory increase, and OOMKilled signals. Partial matches keep missing evidence explicit for the confidence stage.
+
 ## `engine/confidence/`
 
 Scores hypotheses and records supporting and missing evidence.
