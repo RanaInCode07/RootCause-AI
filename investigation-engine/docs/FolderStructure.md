@@ -10,12 +10,15 @@ investigation-engine/
     FolderStructure.md
     Roadmap.md
   dataset/
+    schema/
+      incident.schema.json
     incidents/
-engine/
-  loader/
-  classifier/
-  collector/
-  hypothesis/
+      oom_after_deployment.json
+  engine/
+    loader/
+    classifier/
+    collector/
+    hypothesis/
     confidence/
     report/
   evaluator/
@@ -109,6 +112,8 @@ The deterministic report generator selects the highest-confidence hypothesis, ca
 Compares predicted root cause with ground truth.
 
 Why it exists: the product objective is correctness against known incidents. Evaluation must stay separate from the engine to avoid leaking ground truth into investigation logic.
+
+The deterministic evaluator marks PASS when the predicted root-cause code matches ground truth. It also audits cited supporting evidence by mapping report evidence IDs back to their source IDs, which keeps the report explainability requirement measurable.
 
 ## `internal/`
 
