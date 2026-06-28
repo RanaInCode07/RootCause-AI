@@ -38,6 +38,17 @@ const (
 	EvidenceTypeLog             EvidenceType = "log"
 )
 
+type EvidenceSignal string
+
+const (
+	EvidenceSignalRecentDeployment     EvidenceSignal = "recent_deployment"
+	EvidenceSignalMemoryIncrease       EvidenceSignal = "memory_increase"
+	EvidenceSignalOOMKilled            EvidenceSignal = "oom_killed"
+	EvidenceSignalRestartCountIncrease EvidenceSignal = "restart_count_increase"
+	EvidenceSignalHTTP5xxSpike         EvidenceSignal = "http_5xx_spike"
+	EvidenceSignalRelevantLog          EvidenceSignal = "relevant_log"
+)
+
 type Incident struct {
 	ID               string            `json:"id"`
 	Metadata         IncidentMetadata  `json:"metadata"`
@@ -127,6 +138,7 @@ type Classification struct {
 type Evidence struct {
 	ID         string            `json:"id"`
 	Type       EvidenceType      `json:"type"`
+	Signal     EvidenceSignal    `json:"signal"`
 	Source     EvidenceSource    `json:"source"`
 	ObservedAt time.Time         `json:"observed_at"`
 	Summary    string            `json:"summary"`

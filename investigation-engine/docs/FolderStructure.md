@@ -78,6 +78,8 @@ Extracts structured evidence from incident input.
 
 Why it exists: evidence extraction is the most important boundary in the system. Future real integrations should produce the same evidence shape without changing hypothesis rules.
 
+The deterministic collector is intentionally observational. It records facts such as recent deployment, memory increase, OOMKilled events, restart count increases, 5xx spikes, and relevant log signals. It does not assign root cause.
+
 ## `engine/hypothesis/`
 
 Generates candidate root causes from evidence.
