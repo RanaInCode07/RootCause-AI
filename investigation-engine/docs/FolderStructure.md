@@ -102,6 +102,8 @@ Builds the final investigation report.
 
 Why it exists: reporting is a contract boundary. It should format decisions without re-running investigation logic.
 
+The deterministic report generator selects the highest-confidence hypothesis, carries evidence forward, builds a chronological timeline, and emits recommendation text. It does not collect evidence, generate hypotheses, or recalculate confidence.
+
 ## `evaluator/`
 
 Compares predicted root cause with ground truth.
