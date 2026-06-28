@@ -43,11 +43,15 @@ Planned initial layout:
 
 ```text
 dataset/
+  schema/
+    incident.schema.json
   incidents/
     oom_after_deployment.json
 ```
 
 Why it exists: the engine needs deterministic, repeatable cases with known ground truth. Keeping fixtures outside engine code allows the evaluator to test behavior without hidden assumptions.
+
+The schema folder defines the JSON contract for incident fixtures. The incidents folder contains concrete cases that implement that contract.
 
 ## `engine/`
 
@@ -114,4 +118,3 @@ Why it exists: unit tests should sit next to packages, while cross-pipeline test
 This structure creates more folders than a single-package prototype, but each folder maps to a product concept that must stay independently replaceable.
 
 The structure avoids delivery-specific folders such as `api/`, `server/`, or `cmd/` until an executable interface is needed.
-

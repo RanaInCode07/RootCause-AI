@@ -1,0 +1,180 @@
+{
+  "id": "inc-oom-checkout-2026-06-28",
+  "metadata": {
+    "title": "Checkout API memory exhaustion after deployment",
+    "company": "FictionalPay",
+    "environment": "production",
+    "region": "ap-south-1",
+    "detected_at": "2026-06-28T09:45:00Z"
+  },
+  "alert": {
+    "id": "alert-checkout-memory-001",
+    "name": "Checkout API pod restarts and high memory",
+    "type": "memory",
+    "severity": "critical",
+    "service": "checkout-api",
+    "started_at": "2026-06-28T09:42:00Z",
+    "labels": {
+      "team": "payments",
+      "namespace": "payments-prod"
+    }
+  },
+  "deployment": {
+    "id": "deploy-checkout-api-20260628-0915",
+    "service": "checkout-api",
+    "version": "2026.06.28.1",
+    "previous_version": "2026.06.27.4",
+    "commit_sha": "9f5b3c7a1d8e",
+    "author": "payments-platform",
+    "deployed_at": "2026-06-28T09:15:00Z",
+    "summary": "Enabled a new in-memory fraud feature cache in checkout request processing."
+  },
+  "metrics": [
+    {
+      "id": "metric-checkout-memory",
+      "name": "container_memory_usage_mb",
+      "unit": "MB",
+      "points": [
+        {
+          "timestamp": "2026-06-28T09:10:00Z",
+          "value": 418
+        },
+        {
+          "timestamp": "2026-06-28T09:20:00Z",
+          "value": 612
+        },
+        {
+          "timestamp": "2026-06-28T09:30:00Z",
+          "value": 1088
+        },
+        {
+          "timestamp": "2026-06-28T09:40:00Z",
+          "value": 1796
+        },
+        {
+          "timestamp": "2026-06-28T09:44:00Z",
+          "value": 2048
+        }
+      ]
+    },
+    {
+      "id": "metric-checkout-cpu",
+      "name": "container_cpu_cores",
+      "unit": "cores",
+      "points": [
+        {
+          "timestamp": "2026-06-28T09:10:00Z",
+          "value": 0.41
+        },
+        {
+          "timestamp": "2026-06-28T09:30:00Z",
+          "value": 0.53
+        },
+        {
+          "timestamp": "2026-06-28T09:44:00Z",
+          "value": 0.58
+        }
+      ]
+    },
+    {
+      "id": "metric-checkout-restarts",
+      "name": "kube_pod_container_status_restarts_total",
+      "unit": "count",
+      "points": [
+        {
+          "timestamp": "2026-06-28T09:10:00Z",
+          "value": 0
+        },
+        {
+          "timestamp": "2026-06-28T09:44:00Z",
+          "value": 3
+        }
+      ]
+    },
+    {
+      "id": "metric-checkout-5xx-rate",
+      "name": "http_5xx_rate_per_minute",
+      "unit": "requests_per_minute",
+      "points": [
+        {
+          "timestamp": "2026-06-28T09:10:00Z",
+          "value": 2
+        },
+        {
+          "timestamp": "2026-06-28T09:44:00Z",
+          "value": 42
+        }
+      ]
+    }
+  ],
+  "kubernetes_events": [
+    {
+      "id": "kube-event-checkout-oom-1",
+      "timestamp": "2026-06-28T09:41:12Z",
+      "type": "Warning",
+      "reason": "OOMKilled",
+      "namespace": "payments-prod",
+      "pod": "checkout-api-7f9c8d6d4b-v2h6m",
+      "container": "checkout-api",
+      "message": "Container checkout-api was killed because it exceeded its memory limit.",
+      "restart_count": 1
+    },
+    {
+      "id": "kube-event-checkout-backoff-1",
+      "timestamp": "2026-06-28T09:43:04Z",
+      "type": "Warning",
+      "reason": "BackOff",
+      "namespace": "payments-prod",
+      "pod": "checkout-api-7f9c8d6d4b-v2h6m",
+      "container": "checkout-api",
+      "message": "Back-off restarting failed container checkout-api.",
+      "restart_count": 3
+    }
+  ],
+  "logs": [
+    {
+      "id": "log-checkout-cache-enabled",
+      "timestamp": "2026-06-28T09:16:03Z",
+      "level": "info",
+      "service": "checkout-api",
+      "message": "fraud feature cache initialized",
+      "attributes": {
+        "version": "2026.06.28.1",
+        "cache_mode": "in_memory"
+      }
+    },
+    {
+      "id": "log-checkout-memory-pressure",
+      "timestamp": "2026-06-28T09:39:55Z",
+      "level": "warn",
+      "service": "checkout-api",
+      "message": "memory pressure detected while processing checkout requests",
+      "attributes": {
+        "heap_mb": "1840",
+        "request_path": "/v1/checkout"
+      }
+    },
+    {
+      "id": "log-checkout-oom",
+      "timestamp": "2026-06-28T09:41:10Z",
+      "level": "error",
+      "service": "checkout-api",
+      "message": "process terminated after runtime out-of-memory condition",
+      "attributes": {
+        "heap_mb": "2048",
+        "version": "2026.06.28.1"
+      }
+    }
+  ],
+  "ground_truth": {
+    "root_cause_code": "memory_leak_after_deployment",
+    "summary": "Deployment 2026.06.28.1 introduced an unbounded in-memory fraud feature cache that caused checkout-api pods to exceed their memory limit and be OOMKilled.",
+    "evidence_ids": [
+      "deploy-checkout-api-20260628-0915",
+      "metric-checkout-memory",
+      "metric-checkout-restarts",
+      "kube-event-checkout-oom-1",
+      "log-checkout-oom"
+    ]
+  }
+}
