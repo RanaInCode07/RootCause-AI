@@ -15,6 +15,7 @@ investigation-engine/
     incidents/
       oom_after_deployment.json
   engine/
+    engine.go
     loader/
     classifier/
     collector/
@@ -62,6 +63,8 @@ The schema folder defines the JSON contract for incident fixtures. The incidents
 The investigation pipeline lives here. Each subpackage owns one stage.
 
 Why it exists: classification, evidence extraction, hypothesis generation, confidence scoring, and report creation are separate responsibilities. Splitting them keeps tests focused and makes future replacements easier.
+
+`engine.go` wires stage interfaces together through dependency injection. The default engine uses deterministic V1 implementations, while tests or future plugins can replace any stage without changing orchestration.
 
 ## `engine/loader/`
 
