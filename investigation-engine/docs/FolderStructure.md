@@ -94,6 +94,8 @@ Scores hypotheses and records supporting and missing evidence.
 
 Why it exists: confidence is a separate concern from hypothesis generation. This makes it possible to tune scoring without changing what hypotheses are considered.
 
+The deterministic scorer uses transparent weights per evidence signal. It attaches full supporting evidence objects and derives missing core evidence so the report layer can explain why confidence is high or low.
+
 ## `engine/report/`
 
 Builds the final investigation report.
